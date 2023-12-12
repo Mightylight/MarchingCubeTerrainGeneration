@@ -21,10 +21,25 @@ public class MarchingCubeManager : MonoBehaviour
     {
         Debug.Log("hoi?");
         _weights = new float[_width * _height * _depth];
-        for (int i = 0; i < _weights.Length; i++)
+        // for (int i = 0; i < _weights.Length; i++)
+        // {
+        //     _weights[i] = UnityEngine.Random.Range(0f, 2f);
+        //     _weights[i] = Mathf.PerlinNoise();
+        //     Debug.Log(_weights[i]);
+        // }
+
+        for (int x = 0; x < _width; x++)
         {
-            _weights[i] = UnityEngine.Random.Range(0f, 2f);
-            Debug.Log(_weights[i]);
+            for (int y = 0; y < _height; y++)
+            {
+                for (int z = 0; z < _depth; z++)
+                {
+                    float noiseValue = Mathf.PerlinNoise(x * .3f, z * .3f);
+                    int pY = Mathf.RoundToInt(noiseValue * _height/2);
+                    //_weights[IndexFromCoord(x, y, z)] = 1f;
+                    _weights[IndexFromCoord(x, y, z)] = y > pY ? 0f : 1f;
+                }
+            }
         }
         CreateCubes();
         GenerateMesh();
@@ -49,8 +64,13 @@ public class MarchingCubeManager : MonoBehaviour
             {
                 for (int z = 0; z < _depth; z++)
                 {
-                    if(x == 0 || y == 0 || z == 0 || x == _width - 1 || y == _height - 1 || z == _depth - 1) continue;
+                    //Debug.Log(x + " " + y + " " + z);
+                    if(x == _width - 1 || y == _height - 1 || z == _depth - 1) continue;
                     float[] cubeValues = CalculateValues(x, y, z);
+                    // float[] cubeValues = new float[8]
+                    // {
+                    //     1,1,1,1,1,1,1,0
+                    // };
                     MarchingCubes marchingCubes = new();
                     Vector3 worldPos = new (x * _cubeSize, y * _cubeSize, z * _cubeSize);
                     marchingCubes.InitializeCube(cubeValues, worldPos);
@@ -64,16 +84,25 @@ public class MarchingCubeManager : MonoBehaviour
     private float[] CalculateValues(int x, int y, int z)
     {
         float[] cubeValues = new float[8];
+                    
+        cubeValues[0] = _weights[IndexFromCoord(x, y, z + 1)];
+        cubeValues[1] = _weights[IndexFromCoord(x + 1, y, z + 1)];
+        cubeValues[2] = _weights[IndexFromCoord(x + 1, y, z)];
+        cubeValues[3] = _weights[IndexFromCoord(x, y, z)];
+        cubeValues[4] = _weights[IndexFromCoord(x, y + 1, z + 1)];
+        cubeValues[5] = _weights[IndexFromCoord(x + 1, y + 1, z + 1)];
+        cubeValues[6] = _weights[IndexFromCoord(x + 1, y + 1, z)];
+        cubeValues[7] = _weights[IndexFromCoord(x, y + 1, z)];
         
-        cubeValues[0] = _weights[x + y * _width + z * _width * _height];
-        cubeValues[1] = _weights[(x + 1) + y * _width + z * _width * _height];
-        cubeValues[2] = _weights[(x + 1) + y * _width + (z + 1) * _width * _height];
-        cubeValues[3] = _weights[x + y * _width + (z + 1) * _width * _height];
-        cubeValues[4] = _weights[x + (y + 1) * _width + z * _width * _height];
-        cubeValues[5] = _weights[(x + 1) + (y + 1) * _width + z * _width * _height];
-        cubeValues[6] = _weights[(x + 1) + (y + 1) * _width + (z + 1) * _width * _height];
-        cubeValues[7] = _weights[x + (y + 1) * _width + (z + 1) * _width * _height];
+        Debug.Log(cubeValues[0] + " " + cubeValues[1] + " " + cubeValues[2] + " " + cubeValues[3] + " " + cubeValues[4] + " " + cubeValues[5] + " " + cubeValues[6] + " " + cubeValues[7]);
+        
+        
         return cubeValues;
+    }
+    
+    private int IndexFromCoord(int x, int y, int z)
+    {
+        return x + _width * (y + _depth * z);
     }
 
     private void OnDrawGizmos()

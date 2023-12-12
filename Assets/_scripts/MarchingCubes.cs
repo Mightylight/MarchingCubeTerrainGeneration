@@ -15,14 +15,16 @@ public class MarchingCubes
     private void CalculateCubeConfiguration()
     {
         int cubeConfig = 0;
-        for (int i = 0; i < _cubeValues.Length; i++)
-        {
-            if (_cubeValues[i] > 1f)
-            {
-                cubeConfig |= 1 << i;
-            }
-        }
+        if (_cubeValues[0] < 0.5f) cubeConfig |= 1;
+        if (_cubeValues[1] < 0.5f) cubeConfig |= 2;
+        if (_cubeValues[2] < 0.5f) cubeConfig |= 4;
+        if (_cubeValues[3] < 0.5f) cubeConfig |= 8;
+        if (_cubeValues[4] < 0.5f) cubeConfig |= 16;
+        if (_cubeValues[5] < 0.5f) cubeConfig |= 32;
+        if (_cubeValues[6] < 0.5f) cubeConfig |= 64;
+        if (_cubeValues[7] < 0.5f) cubeConfig |= 128;
         _cubeConfig = cubeConfig;
+        //Debug.Log($"CubeConfig: {_cubeConfig}");
     }
 
     public void InitializeCube(float[] pCubeValues, Vector3 pWorldPos)
@@ -63,7 +65,8 @@ public class MarchingCubes
              pMeshBuilder.AddVertex(trianglePoint2);
              pMeshBuilder.AddVertex(trianglePoint3);
              pMeshBuilder.AddTriangle(index,index + 1,index + 2);
-             
+             //pMeshBuilder.AddTriangle(index + 2,index + 1,index);
+             //Debug.Log($"Making triangle with points: {trianglePoint1}, {trianglePoint2}, {trianglePoint3}");
         }
         // Mesh mesh = pMeshBuilder.CreateMesh();
         // _meshFilter.mesh = mesh;
