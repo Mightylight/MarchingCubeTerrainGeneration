@@ -9,40 +9,59 @@ public class MarchingCubeManager : MonoBehaviour
     [SerializeField] private int _width;
     [SerializeField] private int _height;
     [SerializeField] private int _depth;
+    
+    //TODO: make cubesize actually do something
     [SerializeField] private float _cubeSize = 1f;
+
+    private Camera _camera;
+    
     
     private List<MarchingCubes> _marchingCubes = new();
     private float[] _weights;
     
     MeshBuilder _meshBuilder = new MeshBuilder();
     
-    //Create points with width,height and depth
     private void Start()
     {
-        Debug.Log("hoi?");
         _weights = new float[_width * _height * _depth];
-        // for (int i = 0; i < _weights.Length; i++)
-        // {
-        //     _weights[i] = UnityEngine.Random.Range(0f, 2f);
-        //     _weights[i] = Mathf.PerlinNoise();
-        //     Debug.Log(_weights[i]);
-        // }
+        _camera = Camera.main;
+        ConfigureCamera();
+        GetNoise();
+        CreateCubes();
+        GenerateMesh();
+    }
 
+    private void ConfigureCamera()
+    {
+        Vector3 camPos = new Vector3(_width / 2, _width, _width / 2);
+        _camera.transform.position = camPos;
+        _camera.transform.rotation = Quaternion.Euler(90,0,0);
+    }
+
+    private void GetNoise()
+    {
+        //TODO: Make a improved version of the noise function
+        //TODO: Add a random offset to the noise to make the terrain random
         for (int x = 0; x < _width; x++)
         {
             for (int y = 0; y < _height; y++)
             {
                 for (int z = 0; z < _depth; z++)
                 {
-                    float noiseValue = Mathf.PerlinNoise(x * .3f, z * .3f);
-                    int pY = Mathf.RoundToInt(noiseValue * _height/2);
-                    //_weights[IndexFromCoord(x, y, z)] = 1f;
-                    _weights[IndexFromCoord(x, y, z)] = y > pY ? 0f : 1f;
+                    float noiseValue = Mathf.PerlinNoise(x * .1f, z * .1f);
+                    
+                    //Calculate the height cutoff point to get a semi-smooth terrain
+                    int heightCutoff = Mathf.RoundToInt(noiseValue * _height);
+                    _weights[IndexFromCoord(x, y, z)] = y > heightCutoff ? 0f : 1f;
+                    
+                    //Make the top row of points have a weight of 0, to make sure the terrain doesn't have holes
+                    if (y == _height - 1)
+                    {
+                        _weights[IndexFromCoord(x, y, z)] = 0f;
+                    }
                 }
             }
         }
-        CreateCubes();
-        GenerateMesh();
     }
 
     private void GenerateMesh()
@@ -57,25 +76,18 @@ public class MarchingCubeManager : MonoBehaviour
 
     private void CreateCubes()
     {
-        Debug.Log("Creating Cubes");
         for (int x = 0; x < _width; x++)
         {
             for (int y = 0; y < _height; y++)
             {
                 for (int z = 0; z < _depth; z++)
                 {
-                    //Debug.Log(x + " " + y + " " + z);
                     if(x == _width - 1 || y == _height - 1 || z == _depth - 1) continue;
                     float[] cubeValues = CalculateValues(x, y, z);
-                    // float[] cubeValues = new float[8]
-                    // {
-                    //     1,1,1,1,1,1,1,0
-                    // };
                     MarchingCubes marchingCubes = new();
                     Vector3 worldPos = new (x * _cubeSize, y * _cubeSize, z * _cubeSize);
                     marchingCubes.InitializeCube(cubeValues, worldPos);
                     _marchingCubes.Add(marchingCubes);
-                    //Debug.Log($"CubeConfig: {marchingCubes._cubeConfig}");
                 }
             }
         }
@@ -94,15 +106,12 @@ public class MarchingCubeManager : MonoBehaviour
         cubeValues[6] = _weights[IndexFromCoord(x + 1, y + 1, z)];
         cubeValues[7] = _weights[IndexFromCoord(x, y + 1, z)];
         
-        Debug.Log(cubeValues[0] + " " + cubeValues[1] + " " + cubeValues[2] + " " + cubeValues[3] + " " + cubeValues[4] + " " + cubeValues[5] + " " + cubeValues[6] + " " + cubeValues[7]);
-        
-        
         return cubeValues;
     }
     
     private int IndexFromCoord(int x, int y, int z)
     {
-        return x + _width * (y + _depth * z);
+        return (_width * _height * z) + (_width * y) + x;
     }
 
     private void OnDrawGizmos()
@@ -111,10 +120,10 @@ public class MarchingCubeManager : MonoBehaviour
         
         for (int x = 0; x < _width; x++) {
             for (int y = 0; y < _height; y++) {
-                for (int z = 0; z < _depth; z++) {
-                    int index = x + _width * (y + _depth * z);
+                for (int z = 0; z < _depth; z++)
+                {
+                    int index = IndexFromCoord(x, y, z);
                     float noiseValue = _weights[index];
-                    //Gizmos.color = Color.Lerp(Color.black, Color.white, noiseValue);
                     Gizmos.color = noiseValue < 0.5f ? Color.black : Color.white;
                     Gizmos.DrawCube(new Vector3(x, y, z), Vector3.one * .2f);
                 }
