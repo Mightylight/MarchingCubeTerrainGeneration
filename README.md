@@ -12,14 +12,67 @@ By using a noise generator consisting of perlin noise and a Y cuttoff point, the
 
 
 After this grid has been made, cubes are assembled from these points and their configuration is calculated. This is done by combining the values of the corners (either 0 or 1) into a binary number and converting that
-to a decimal number. This number is than put into the Marchingcubes table, to know what triangles need to be formed. The triangulation table was not made by me, but aqquired from https://polycoding.net/assets/downloads/marching-cubes/MarchingCubesTables.cs .
+to a decimal number. This number is then put into the Marchingcubes table, to know what triangles need to be formed. The triangulation table was not made by me, but aqquired from https://polycoding.net/assets/downloads/marching-cubes/MarchingCubesTables.cs .
 
-![cube-configuration-marchingcube-terrain](https://github.com/Mightylight/MarchingCubeTerrainGeneration/assets/59601297/5e0ce07e-32e5-4445-8b4b-2744b2fb3f7c)
+
+```Cs
+private void CalculateCubeConfiguration()
+    {
+        int cubeConfig = 0;
+        if (_cubeValues[0] < 0.5f) cubeConfig |= 1;
+        if (_cubeValues[1] < 0.5f) cubeConfig |= 2;
+        if (_cubeValues[2] < 0.5f) cubeConfig |= 4;
+        if (_cubeValues[3] < 0.5f) cubeConfig |= 8;
+        if (_cubeValues[4] < 0.5f) cubeConfig |= 16;
+        if (_cubeValues[5] < 0.5f) cubeConfig |= 32;
+        if (_cubeValues[6] < 0.5f) cubeConfig |= 64;
+        if (_cubeValues[7] < 0.5f) cubeConfig |= 128;
+        _cubeConfig = cubeConfig;
+    }
+```
 
 
 With the configuration calculated, we make the triangles like this:
 
-![TriangleCalculation-marchingcube-terrain](https://github.com/Mightylight/MarchingCubeTerrainGeneration/assets/59601297/dc1c84d9-9289-4bed-a931-6133cdf42fc3)
+
+```Cs
+public void CreateMesh(MeshBuilder pMeshBuilder)
+    {
+        int[] edges = MarchingCubesTables.triTable[_cubeConfig];
+        
+        //The tri table returns 3 edges per triangle.
+        //-1 in the tri table indicates that no further triangles need to be made for this configuration.
+        for (int i = 0; edges[i] != -1; i += 3)
+        {
+            int firstEdgePoint1 = MarchingCubesTables.edgeConnections[edges[i]][0];
+            int firstEdgePoint2 = MarchingCubesTables.edgeConnections[edges[i]][1];
+
+            
+            int secondEdgePoint1 = MarchingCubesTables.edgeConnections[edges[i + 1]][0];
+            int secondEdgePoint2 = MarchingCubesTables.edgeConnections[edges[i + 1]][1];
+        
+            
+            int thirdEdgePoint1 = MarchingCubesTables.edgeConnections[edges[i + 2]][0];
+            int thirdEdgePoint2 = MarchingCubesTables.edgeConnections[edges[i + 2]][1];
+
+            //Construct the triangle points using the cube corners
+             Vector3 trianglePoint1 =
+                InterpolateVertex(MarchingCubesTables.cubeCorners[firstEdgePoint1], 
+                    MarchingCubesTables.cubeCorners[firstEdgePoint2]) + _worldPos;
+             Vector3 trianglePoint2 =
+                InterpolateVertex(MarchingCubesTables.cubeCorners[secondEdgePoint1], 
+                    MarchingCubesTables.cubeCorners[secondEdgePoint2]) + _worldPos;
+             Vector3 trianglePoint3 =
+                InterpolateVertex(MarchingCubesTables.cubeCorners[thirdEdgePoint1], 
+                    MarchingCubesTables.cubeCorners[thirdEdgePoint2]) + _worldPos;
+             
+             int index = pMeshBuilder.AddVertex(trianglePoint1);
+             pMeshBuilder.AddVertex(trianglePoint2);
+             pMeshBuilder.AddVertex(trianglePoint3);
+             pMeshBuilder.AddTriangle(index,index + 1,index + 2);
+        }
+    }
+```
 
 The triangles are sent to a meshbuilder, which combines all cubes to make a singular mesh inside the MarchingCubeManager.
 
