@@ -11,10 +11,6 @@ public class ManualMarchingCube : MonoBehaviour
 
     [SerializeField] private int _cubeConfig;
     
-    private void Start()
-    {
-        
-    }
 
     private void Update()
     {
@@ -27,9 +23,9 @@ public class ManualMarchingCube : MonoBehaviour
     private void CreateMesh()
     {
         MeshBuilder meshBuilder = new();
-        MarchingCubes marchingCubes = new();
-        marchingCubes.SetCubeConfig(_cubeConfig);
-        marchingCubes.CreateMesh(meshBuilder);
+        MarchingCube marchingCube = new();
+        marchingCube.SetCubeConfig(_cubeConfig);
+        marchingCube.CreateMesh(meshBuilder);
         Mesh mesh = meshBuilder.CreateMesh();
         GetComponent<MeshFilter>().mesh = mesh;
     }
